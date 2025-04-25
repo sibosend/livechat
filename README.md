@@ -1,7 +1,16 @@
+原始项目：https://github.com/lipku/livetalking
+
+
+本项目的优化点：
+- 增加实时背景切换功能
+- 对话界面优化
+- 阿里云ASR支持
+
+环境依赖见 requirements.freeze.txt
+
+
 Real time interactive streaming digital human， realize audio video synchronous dialogue. It can basically achieve commercial effects.  
 实时交互流式数字人，实现音视频同步对话。基本可以达到商用效果
-
-[ernerf效果](https://www.bilibili.com/video/BV1PM4m1y7Q2/)  [musetalk效果](https://www.bilibili.com/video/BV1gm421N7vQ/)  [wav2lip效果](https://www.bilibili.com/video/BV1Bw4m1e74P/)
 
 ## 为避免与3d数字人混淆，原项目metahuman-stream改名为livetalking，原有链接地址继续可用
 
@@ -29,9 +38,6 @@ pip install "git+https://github.com/facebookresearch/pytorch3d.git"
 pip install tensorflow-gpu==2.8.0
 pip install --upgrade "protobuf<=3.20.1"
 ```
-如果用pytorch2.1，torchvision用0.16（可以去torchvision官网根据pytorch版本找匹配的）,cudatoolkit可以不用装  
-安装常见问题[FAQ](/assets/faq.md)  
-linux cuda环境搭建可以参考这篇文章 https://zhuanlan.zhihu.com/p/674972886
 
 
 ## 2. Quick Start
@@ -69,9 +75,6 @@ docker run --gpus all -it --network=host --rm registry.cn-beijing.aliyuncs.com/c
 ```
 代码在/root/metahuman-stream，先git pull拉一下最新代码，然后执行命令同第2、3步 
 
-提供如下镜像
-- autodl镜像: <https://www.codewithgpu.com/i/lipku/metahuman-stream/base>   
-[autodl教程](autodl/README.md)
 
 
 ## 5. 性能分析
@@ -82,19 +85,3 @@ docker run --gpus all -it --network=host --rm registry.cn-beijing.aliyuncs.com/c
 （1）tts延时1.7s左右，目前用的edgetts，需要将每句话转完后一次性输入，可以优化tts改成流式输入  
 （2）wav2vec延时0.4s，需要缓存18帧音频做计算 
 （3）srs转发延时，设置srs服务器减少缓冲延时。具体配置可看 https://ossrs.net/lts/zh-cn/docs/v5/doc/low-latency
-
-
-## 6. TODO
-- [x] 添加chatgpt实现数字人对话
-- [x] 声音克隆
-- [x] 数字人静音时用一段视频代替
-- [x] MuseTalk
-- [x] Wav2Lip
-- [ ] TalkingGaussian
-
----
-如果本项目对你有帮助，帮忙点个star。也欢迎感兴趣的朋友一起来完善该项目.
-* 知识星球: https://t.zsxq.com/7NMyO 沉淀高质量常见问题、最佳实践经验、问题解答  
-* 微信公众号：数字人技术  
-![](https://mmbiz.qpic.cn/sz_mmbiz_jpg/l3ZibgueFiaeyfaiaLZGuMGQXnhLWxibpJUS2gfs8Dje6JuMY8zu2tVyU9n8Zx1yaNncvKHBMibX0ocehoITy5qQEZg/640?wxfrom=12&tp=wxpic&usePicPrefetch=1&wx_fmt=jpeg&amp;from=appmsg)  
-
