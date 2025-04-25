@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebRTC webcam</title>
+    <style>
+    button {
+        padding: 8px 16px;
+    }
+
+    video {
+        width: 100%;
+    }
+
+    .option {
+        margin-bottom: 8px;
+    }
+
+    #media {
+        max-width: 1280px;
+    }
+    </style>
+
+    <script src="asr/recorder-core.js" charset="UTF-8"></script>
+    <script src="asr/wav.js" charset="UTF-8"></script>
+    <script src="asr/pcm.js" charset="UTF-8"></script>
+
+</head>
+<body>
+
+<div class="option" style="display: none;">
+    <input id="use-stun" type="checkbox"/>
+    <label for="use-stun">Use STUN server</label>
+</div>
+<button class="btn btn-primary" id="btn_play" style="display: none;">Start</button>
+<form class="form-inline" id="echo-form">
+    <div class="form-group">
+      <p>input text</p>
+      <p>提示：输入后点击“发送”，然后等待数字人响应~</p>
+      <textarea cols="2" rows="3" style="width:600px;height:50px;" class="form-control" id="message">金庸小说里人脉最多的人物是谁？两句话回答下</textarea>
+    </div>
+    <button id="btn-submit" type="submit" class="btn btn-default">发送</button>
+    
+    <button id="btnStart_asr" type="button">开始录音</button>
+    <button id="btnStop_asr" type="button">停止录音</button>
+  </form>
+
+  
+
+<div id="asr_part" style="height: 1px; overflow: hidden;">
+  <div class="div_class_topArea">
+
+    <div class="div_class_recordControl">
+      asr服务器地址(必填):
+      <br>
+      <input id="wssip" type="text" onchange="addresschange()" style=" width: 100%;height:100%" value="ws://127.0.0.1:10095/"/>
+      <br>
+      <a id="wsslink"  href="#" onclick="window.open('https://127.0.0.1:10095/', '_blank')"><div id="info_wslink">点此处手工授权wss://127.0.0.1:10095/</div></a>
+      <br>
+    <br>  
+    <div  style="border:2px solid #ccc;">
+      选择录音模式:<br/>
+  
+      <label><input name="recoder_mode" onclick="on_recoder_mode_change()" type="radio" value="mic" checked="true"/>麦克风 </label>&nbsp;&nbsp;
+      <label><input name="recoder_mode" onclick="on_recoder_mode_change()" type="radio" value="file" />文件 </label> 
+
+      </div>
+      
+      <br>
+       <div id="mic_mode_div" style="border:2px solid #ccc;display:block;">
+      选择asr模型模式:<br/>
+  
+    <label><input name="asr_mode" type="radio" value="2pass" checked="true"/>2pass </label>&nbsp;&nbsp;
+    <label><input name="asr_mode" type="radio" value="online" />online </label>&nbsp;&nbsp;
+    <label><input name="asr_mode" type="radio" value="offline" />offline </label>
+
+      </div>
+      
+      <div id="rec_mode_div" style="border:2px solid #ccc;display:none;">
+   
+  
+            <input type="file" id="upfile">
+
+      </div>
+      <br>
+      <div id="use_itn_div" style="border:2px solid #ccc;display:block;">
+        逆文本标准化(ITN):<br/>
+        <label><input name="use_itn" type="radio" value="false" checked="true"/>否 </label>&nbsp;&nbsp;
+        <label><input name="use_itn" type="radio" value="true" />是 </label>
+       </div>
+       <br>
+          <div  style="border:2px solid #ccc;">
+        热词设置(一行一个关键字，空格隔开权重,如"阿里巴巴 20")：
+        <br>
+
+
+        <textarea rows="3"  id="varHot"  style=" width: 100%;height:100%" >阿里巴巴 20&#13;hello world 40</textarea>
+        <br>
+
+        </div>
+      语音识别结果显示：
+      <br>
+      
+      <textarea rows="10"  id="varArea" readonly="true" style=" width: 100%;height:100%" ></textarea>
+      <br>
+              <div id="info_div">请点击开始</div>
+      <div class="div_class_buttons">
+        <button id="btnConnect">连接</button>
+        <button id="btnStart">开始录音</button>
+        <button id="btnStop">停止录音</button>
+
+      </div>
+              
+      <audio id="audio_record" type="audio/wav" controls style="margin-top: 12px; width: 100%; display: none"></audio>
+    </div>
+  </div>
+</div>
+
+
+<div id="media">
+    <h2>Media</h2>
+
+    <video id="rtc_media_player" style="width:300px;" controls autoplay></video>
+</div>
+
+
+<script type="text/javascript">
+  asr_url = "wss://nls-gateway-cn-shanghai.aliyuncs.com/ws/v1?token="
+  asr_token = "70d7ce297dab45a4a319d10e5ec70477"
+  document.getElementById('wssip').value = asr_url + asr_token;
+</script>
+
+
+<script src="asr/wsconnecter.js" charset="utf-8"></script>
+<script src="asr/main.js" charset="utf-8"></script>
+
+<script src="srs.sdk.js"></script>
+<!-- <script type="text/javascript" src="http://cdn.sockjs.org/sockjs-0.3.4.js"></script> -->
+<script src="https://lf9-cdn-tos.bytecdntp.com/cdn/expire-1-y/sockjs-client/1.6.0/sockjs.js"></script>
+<script type="text/javascript" src="https://ajax.aspnetcdn.com/ajax/jquery/jquery-2.1.1.min.js"></script>
+</body>
+<script type="text/javascript" charset="utf-8">
+
+  function chat(){
+    var message = $('#message').val();
+    message += "。请用两三句话简要回答。"
+      console.log('Sending: ' + message);
+      fetch('/human', {
+            body: JSON.stringify({
+                text: message,
+                type: 'chat',
+                interrupt: true,
+            }),
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            method: 'POST'
+      });
+      //ws.send(message);
+      $('#message').val('');
+      $('#rtc_media_player').prop('muted', false);
+  }
+
+	$(document).ready(function() {
+	  // var host = window.location.hostname
+	  // var ws = new WebSocket("ws://"+host+":8000/humanecho");
+	  // //document.getElementsByTagName("video")[0].setAttribute("src", aa["video"]);
+	  // ws.onopen = function() {
+		// console.log('Connected');
+	  // };
+	  // ws.onmessage = function(e) {
+		// console.log('Received: ' + e.data);
+		// data = e
+		// var vid = JSON.parse(data.data); 
+		// console.log(typeof(vid),vid)
+		// //document.getElementsByTagName("video")[0].setAttribute("src", vid["video"]);
+		
+	  // };
+	  // ws.onclose = function(e) {
+		// console.log('Closed');
+	  // };
+
+	  $('#echo-form').on('submit', function(e) {
+      e.preventDefault();
+      chat();
+	  });
+
+
+    btnStart_asr = $("#btnStart_asr")
+    btnStop_asr = $("#btnStop_asr")
+    btn_submit = $("#btn-submit")
+
+    btnStart_asr.on('click', function(){
+      start();
+      record();
+      btnStart_asr.prop('disabled', true);
+      btn_submit.prop('disabled', true);
+      btnStop_asr.prop('disabled', false);
+    });
+
+    btnStop_asr.on('click', function(){
+      btnStart_asr.prop('disabled', false);
+      btn_submit.prop('disabled', false);
+      btnStop_asr.prop('disabled', true);
+
+      var varArea = document.getElementById('varArea');
+      var messageArea = document.getElementById('message');
+	    message.value = varArea.value;
+
+      chat();
+
+      stop();
+      
+
+    });
+	});
+
+  $(function(){
+    var sdk = null; // Global handler to do cleanup when republishing.
+    var startPlay = function() {
+        $('#rtc_media_player').show();
+
+        // Close PC when user replay.
+        if (sdk) {
+            sdk.close();
+        }
+        sdk = new SrsRtcWhipWhepAsync();
+
+        // User should set the stream when publish is done, @see https://webrtc.org/getting-started/media-devices
+        // However SRS SDK provides a consist API like https://webrtc.org/getting-started/remote-streams
+        $('#rtc_media_player').prop('srcObject', sdk.stream);
+        // Optional callback, SDK will add track to stream.
+        // sdk.ontrack = function (event) { console.log('Got track', event); sdk.stream.addTrack(event.track); };
+
+        var host = window.location.hostname
+        // For example: webrtc://r.ossrs.net/live/livestream
+        var url = "http://"+host+":1985/rtc/v1/whep/?app=live&stream=livestream"
+        sdk.play(url).then(function(session){
+            //$('#sessionid').html(session.sessionid);
+            //$('#simulator-drop').attr('href', session.simulator + '?drop=1&username=' + session.sessionid);
+        }).catch(function (reason) {
+            sdk.close();
+            $('#rtc_media_player').hide();
+            console.error(reason);
+        });
+    };
+
+    $('#rtc_media_player').hide();
+    // var query = parse_query_string();
+    // srs_init_whep("#txt_url", query);
+    
+    $('#rtc_media_player').prop('muted', true);
+    window.addEventListener("load", function(){ startPlay(); });
+
+    // $("#btn_play").click(startPlay);
+    // Never play util windows loaded @see https://github.com/ossrs/srs/issues/2732
+    // if (query.autostart === 'true') {
+    //     $('#rtc_media_player').prop('muted', true);
+    //     console.warn('For autostart, we should mute it, see https://www.jianshu.com/p/c3c6944eed5a ' +
+    //         'or https://developers.google.com/web/updates/2017/09/autoplay-policy-changes#audiovideo_elements');
+    //     window.addEventListener("load", function(){ startPlay(); });
+    // }
+});
+</script>
+</html>

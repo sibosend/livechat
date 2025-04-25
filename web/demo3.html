@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+ 
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script type="text/javascript" src="https://ajax.aspnetcdn.com/ajax/jquery/jquery-2.1.1.min.js"></script>
+
+  <style type="text/css">
+    body{
+        background-color: #f3f7f9;
+    }
+    .contain{
+        width: 800px;
+        height: 500px;
+        border: 1px solid #7a7a7a;
+        position: relative;
+    }
+    .top{
+        height: 70%;
+        display: flex;
+        flex-direction: column;
+    }
+    .top-box{
+        display: flex;
+        flex-wrap: wrap;
+        overflow-y: scroll;
+    }
+    
+    .chat-lst-1{
+        min-width: 400px;
+        display: flex;
+        padding: 20px;
+    }
+    .chat-lst-1 img{
+        width: 40px;
+        border-radius: 50%;
+    }
+    .chat-content-1{
+        max-width: 300px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-left: 10px;
+        padding: 10px 20px;
+        background-color: #e2e2e2;
+        border-radius: 5px;
+    }
+    
+    .chat-lst-2{
+        min-width: 400px;
+        display: flex;
+        justify-content: flex-end;
+        padding: 20px;
+        margin-left: auto;
+    }
+    .chat-lst-2 img{
+        width: 40px;
+        border-radius: 50%;
+    }
+    .chat-content-2{
+        max-width: 300px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-right: 10px;
+        padding: 10px 20px;
+        background-color: #5FB878;
+        word-break: break-word;
+        border-radius: 5px;
+    }
+    .bottom{
+        height: 30%;
+        border-top: 1px solid #7a7a7a;
+        text-align: center;
+    }
+    .input textarea{
+        width: 80%;
+        margin: 10px auto;
+        resize: none;
+        border: 0;
+        padding: 12px 16px;
+        border-radius: 8px;
+        box-sizing: border-box;
+    }
+    .input textarea:hover, .input textarea:focus {
+        /* outline: none; */
+        border: 1px solid #3370ff
+    }
+    .send{
+        position: absolute;
+        right: 20px;
+        bottom: 20px;
+    }
+
+  </style>
+
+</head>
+ 
+<body>
+  <div class="contain">
+    <div class="top">
+      <div class="top-box" id="ai-chat-box">
+        
+      </div>
+    </div>
+    <div class="bottom">
+      <div class="input">
+        <textarea name="send_content" class="chatinput" id="send_content" cols="80" rows="1" placeholder="请点击立即咨询按钮进行对话"></textarea>
+      </div>
+      <div class="send">
+        <button onclick="send()">发送</button>
+      </div>
+    </div>
+  </div>
+ 
+
+
+  <script type="text/javascript">
+
+        var msg_max_items = 20;
+        let data = [
+            {
+                status: 1,
+                userId: '1',
+                img: './static/logo2.png',
+                time: '2021-2-26 15:00',
+                content: '你好, 我是德宝艺苑小助手，请问有什么可以帮助的？'
+            }
+        ]
+        
+        // 初始化页面
+        function init(data) {
+            let chat_html = ''
+            for (let i = 0; i < data.length; i++) {
+                if (data[i].status == 1) {
+                    chat_html = `
+                        <div class="chat-lst-1 chat-lst">
+                            <div class="img">
+                                <img src="` + data[i].img + `" alt="">
+                            </div>
+                            <div class="chat-content-1">` + data[i].content +`</div>
+                        </div>
+                    `
+                }else{
+                    chat_html = `
+                        <div class="chat-lst-2 chat-lst">
+                            <div class="chat-content-2">` + data[i].content +`</div>
+                            <div class="img">
+                                <img src="` + data[i].img + `" alt="">
+                            </div>
+                        </div>
+                    `
+                }
+                $('.top-box').append(chat_html)
+            }
+            $('.top-box').scrollTop($('.top-box').height())
+        }
+        
+        // 发送信息
+        function send() {
+            // console.log()
+            data.push({
+                status: 2,
+                userId: '2',
+                img: './static/customer.png',
+                time: 'XXXX-XX-XX XX:xx',
+                content: $('#send_content').val()
+            })
+            render_page({
+                status: 2,
+                userId: '2',
+                img: './static/customer.png',
+                time: 'XXXX-XX-XX XX:xx',
+                content: $('#send_content').val()
+            })
+            $('#send_content').val('')
+
+            if($("#ai-chat-box div.chat-lst").length > msg_max_items){
+                $("#ai-chat-box div.chat-lst:first-child").remove();
+                $("#ai-chat-box div.chat-lst:first-child").remove();
+            }
+        }
+        // 发送后再次渲染页面
+        function render_page(data) {
+            let chat_html = `
+                    <div class="chat-lst-2 chat-lst">
+                        <div class="chat-content-2">` + data.content +`</div>
+                        <div class="img">
+                            <img src="` + data.img + `" alt="">
+                        </div>
+                    </div>
+                `
+            $('.top-box').append(chat_html)
+            $('.top-box').scrollTop($('.top-box')[0].scrollHeight + $('.top-box')[0].scrollTop)
+            
+            setTimeout(() => {
+                get()
+            }, 1000);
+        }
+        
+        // 模拟接受信息
+        function get() {
+            let text = ['抱歉,我不大清楚你的问题!' , '你可以再详细描述你的问题吗?']
+            let data = {
+                status: 1,
+                userId: '1',
+                img: './static/logo2.png',
+                time: 'XXXX-XX-XX XX:xx',
+                content: text[Math.floor(Math.random() * 2)]
+            }
+            let chat_html = `
+                <div class="chat-lst-1 chat-lst">
+                    <div class="img">
+                        <img src="` + data.img + `" alt="">
+                    </div>
+                    <div class="chat-content-1">` + data.content +`</div>
+                </div>
+            `
+            $('.top-box').append(chat_html)
+            $('.top-box').scrollTop($('.top-box')[0].scrollHeight + $('.top-box')[0].scrollTop)
+        }
+        
+        init(data)
+        
+        document.onkeydown = function(ev){
+            var event = ev || event
+            if(event.keyCode==13){
+                send()
+            }
+        }
+  </script>
+</body>
+ 
+</html>

@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebRTC webcam</title>
+    <style>
+      body{
+        margin: 0px;
+        background-color: rgba(243, 247, 249);
+      }
+    button {
+        padding: 8px 16px;
+    }
+
+    video {
+        width: 100%;
+    }
+
+    .option {
+        margin-bottom: 8px;
+    }
+
+    #media {
+        max-width: 1280px;
+    }
+    </style>
+
+  <style>
+    body{
+        
+    }
+    .contain{
+        background-color: rgba(243, 247, 249, 0.4);
+        width: 100%;
+        height: 300px;
+        /* border: 1px solid #7a7a7a; */
+        position: absolute;
+        top: 100px;
+        left: 0px;
+    }
+    .top{
+        height: 70%;
+        display: flex;
+        flex-direction: column;
+    }
+    .top-box{
+        display: flex;
+        flex-wrap: wrap;
+        overflow-y: scroll;
+    }
+    
+    .chat-lst {
+      min-width: 80%;
+        display: flex;
+        padding: 20px 10px;
+    }
+
+    .chat-lst-1{
+        
+    }
+    .chat-lst-1 img{
+        width: 40px;
+        border-radius: 50%;
+    }
+    .chat-content-1{
+        max-width: 80%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-left: 10px;
+        padding: 10px 20px;
+        background-color: #e2e2e2;
+        border-radius: 5px;
+    }
+    
+    .chat-lst-2{
+        justify-content: flex-end;
+        margin-left: auto;
+    }
+    .chat-lst-2 img{
+        width: 40px;
+        border-radius: 50%;
+    }
+    .chat-content-2{
+        max-width: 80%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-right: 10px;
+        padding: 10px 20px;
+        background-color: #5FB878;
+        word-break: break-word;
+        border-radius: 5px;
+    }
+    .bottom{
+        height: 30%;
+        border-top: 1px solid #7a7a7a;
+        text-align: center;
+    }
+    .input textarea{
+        width: 60%;
+        margin: 10px auto;
+        resize: none;
+        border: 0;
+        padding: 12px 16px;
+        border-radius: 8px;
+        box-sizing: border-box;
+    }
+    .input textarea:hover, .input textarea:focus {
+        /* outline: none; */
+        border: 1px solid #3370ff
+    }
+    .send{
+
+    }
+
+    .szmedia{
+      width: 100%;
+      height:100%;
+    }
+
+    #btnStart_asr2 { 
+        background: url('./static/microphone-active.gif') no-repeat center center fixed; 
+        -webkit-background-size: cover;
+        -moz-background-size: cover;
+        -o-background-size: cover;
+        background-size: cover;
+    }
+
+    .chat-container{
+
+    }
+  </style>
+    
+    <!-- <script src="asr/recorder-core.js" charset="UTF-8"></script>
+    <script src="asr/wav.js" charset="UTF-8"></script>
+    <script src="asr/pcm.js" charset="UTF-8"></script> -->
+ 
+    <script type="text/javascript" src="https://ajax.aspnetcdn.com/ajax/jquery/jquery-2.1.1.min.js"></script>
+
+</head>
+<body>
+
+  <div id="init-part-1" style="height:0px; overflow:hidden; ">
+      <div class="option" style="display: none;">
+        <input id="use-stun" type="checkbox"/>
+        <label for="use-stun">Use STUN server</label>
+    </div>
+    <button class="btn btn-primary" id="btn_play" style="display: none;">Start</button>
+    <form class="form-inline" id="echo-form">
+        <div class="form-group">
+          <p>input text</p>
+          <p>提示：输入后点击“发送”，然后等待数字人响应~</p>
+          <textarea cols="2" rows="3" style="width:600px;height:50px;" class="form-control" id="message223">金庸小说里人脉最多的人物是谁？两句话回答下</textarea>
+        </div>
+        <button id="btn-submit" type="submit" class="btn btn-default">发送</button>
+        
+      </form>
+  </div>
+
+  <div id="asr_part" style="height: 0px; overflow: hidden;">
+    <input id="wssip" type="text"  value="ws://empty..."/>
+    <br />
+    <input id="wssappkey" type="text"  value="wssappkey."/>
+    <br />
+    <input id="input_mode" type="text"  value="1"/>
+    <br/>
+    <div id="status"></div>
+  </div>
+
+<!-- <div id="asr_part" style="height: 0px; overflow: hidden;">
+  <div class="div_class_topArea">
+
+    <div class="div_class_recordControl">
+      asr服务器地址(必填):
+      <br>
+      <input id="wssip" type="text" onchange="addresschange()" style=" width: 100%;height:100%" value="ws://empty..."/>
+      <br>
+      <a id="wsslink"  href="#" onclick="window.open('https://127.0.0.1:10095/', '_blank')"><div id="info_wslink">点此处手工授权wss://127.0.0.1:10095/</div></a>
+      <br>
+    <br>  
+    <div  style="border:2px solid #ccc;">
+      选择录音模式:<br/>
+  
+      <label><input name="recoder_mode" onclick="on_recoder_mode_change()" type="radio" value="mic" checked="true"/>麦克风 </label>&nbsp;&nbsp;
+      <label><input name="recoder_mode" onclick="on_recoder_mode_change()" type="radio" value="file" />文件 </label> 
+
+      </div>
+      
+      <br>
+       <div id="mic_mode_div" style="border:2px solid #ccc;display:block;">
+      选择asr模型模式:<br/>
+  
+    <label><input name="asr_mode" type="radio" value="2pass" checked="true"/>2pass </label>&nbsp;&nbsp;
+    <label><input name="asr_mode" type="radio" value="online" />online </label>&nbsp;&nbsp;
+    <label><input name="asr_mode" type="radio" value="offline" />offline </label>
+
+      </div>
+      
+      <div id="rec_mode_div" style="border:2px solid #ccc;display:none;">
+   
+  
+            <input type="file" id="upfile">
+
+      </div>
+      <br>
+      <div id="use_itn_div" style="border:2px solid #ccc;display:block;">
+        逆文本标准化(ITN):<br/>
+        <label><input name="use_itn" type="radio" value="false" checked="true"/>否 </label>&nbsp;&nbsp;
+        <label><input name="use_itn" type="radio" value="true" />是 </label>
+       </div>
+       <br>
+          <div  style="border:2px solid #ccc;">
+        热词设置(一行一个关键字，空格隔开权重,如"阿里巴巴 20")：
+        <br>
+
+
+        <textarea rows="3"  id="varHot"  style=" width: 100%;height:100%" >阿里巴巴 20&#13;hello world 40</textarea>
+        <br>
+
+        </div>
+      语音识别结果显示：
+      <br>
+      
+      <textarea rows="10"  id="varArea" readonly="true" style=" width: 100%;height:100%" ></textarea>
+      <br>
+              <div id="info_div">请点击开始</div>
+      <div class="div_class_buttons">
+        <button id="btnConnect">连接</button>
+        <button id="btnStart">开始录音</button>
+        <button id="btnStop">停止录音</button>
+
+      </div>
+              
+      <audio id="audio_record" type="audio/wav" controls style="margin-top: 12px; width: 100%; display: none"></audio>
+    </div>
+  </div>
+</div> -->
+
+<div id="szmedia" class="szmedia">
+  <video id="rtc_media_player" style="width:100%;" controls autoplay></video>
+</div>
+
+<div class="contain chat-container" id="chat-container">
+  <div class="top">
+    <div class="top-box" id="ai-chat-box">
+      
+    </div>
+  </div>
+  <div class="bottom">
+    <div class="input">
+      <textarea name="send_content" class="chatinput" id="message" cols="80" rows="1" placeholder="请点击立即咨询按钮进行对话"></textarea>
+      <button id="sendtext" style="float: right; margin:10px 5px;">发送</button>
+    </div>
+   
+   
+
+    <div class="send">
+      <img id="btnStart_asr" src="./static/microphone-active.gif" style="width:auto; height: 40px; cursor: pointer;" />
+      <img id="btnStop_asr" src="./static/icons8-cancel-80.png" style="width:auto; height: 40px; cursor: pointer; display: none;" />
+      <img id="btn_wait" src="./static/waiting.gif" style="width:auto; height: 40px; cursor: pointer; display: none;" />
+    </div>
+    <div class="recording" id="recordinggif" style="margin-top: -110px; display:none;  ">
+      <img src="./static/icons8-audio-wave.gif">
+    </div>
+  </div>
+</div>
+
+
+<script type="text/javascript">
+  asr_url = "wss://nls-gateway-cn-shanghai.aliyuncs.com/ws/v1?token="
+  asr_token = "70d7ce297dab45a4a319d10e5ec70477"
+  asr_appkey = "aDGiZcvxOq2cpJ2d"
+
+  document.getElementById('wssip').value = asr_url + asr_token;
+  document.getElementById('wssappkey').value = asr_appkey;
+
+</script>
+
+
+<script type="text/javascript" charset="utf-8">
+
+  maxheight = window.screen.height;
+  maxwidth = window.screen.width;
+
+  chat_bot_response = "";
+
+  const input_mode = document.getElementById("input_mode"); //1 录音 2文本
+
+  function chat(msg){
+    render_client(msg);
+
+    message_send = msg + "。请简要回答，最多使用两三句话。"
+    console.log('Sending: ' + message_send);
+    fetch('/human', {
+          body: JSON.stringify({
+              text: message_send,
+              type: 'chat',
+              interrupt: true,
+          }),
+          headers: {
+              'Content-Type': 'application/json'
+          },
+          method: 'POST'
+    }).then(data => data.json())
+    .then(doSomethingWithText)
+    .catch(error => new Error(error));
+    
+    //ws.send(message);
+    // $('#message').val('');
+    $('#rtc_media_player').prop('muted', false);
+  }
+
+  function doSomethingWithText(resp) {
+    chat_bot_response = resp.res;
+  }
+
+
+
+  // function chat(){
+  //   var message = $('#message').val();
+  //   message_send = message + "。请简要回答，最多使用两三句话。"
+  //     console.log('Sending: ' + message_send);
+  //     fetch('/human', {
+  //           body: JSON.stringify({
+  //               text: message_send,
+  //               type: 'chat',
+  //               interrupt: true,
+  //           }),
+  //           headers: {
+  //               'Content-Type': 'application/json'
+  //           },
+  //           method: 'POST'
+  //     });
+  //     //ws.send(message);
+  //     $('#message').val('');
+  //     $('#rtc_media_player').prop('muted', false);
+  // }
+
+
+  btnStart_asr = $("#btnStart_asr")
+  btnStop_asr = $("#btnStop_asr")
+  btn_submit = $("#btn-submit")
+  btn_wait = $("#btn_wait")
+
+  media_div = $("#szmedia")
+  rtc_media_player = $("#rtc_media_player")
+  chat_container = $("#chat-container")
+  recordinggif = $("#recordinggif")
+
+  sendtext = $("#sendtext")
+
+  const status_p1 = $('#status');
+  const message_p1 = $('#message');
+
+
+  function tran_message(){
+        message_p1.val(status_p1.text());
+  }
+
+
+  function send_new_chat(){
+      var msg = message_p1.val();
+      if(msg.length < 1) return;
+      chat(msg);
+
+      message_p1.val('');
+  }
+
+	$(document).ready(function() {
+  // var host = window.location.hostname
+	  // var ws = new WebSocket("ws://"+host+":8000/humanecho");
+	  // //document.getElementsByTagName("video")[0].setAttribute("src", aa["video"]);
+	  // ws.onopen = function() {
+		// console.log('Connected');
+	  // };
+	  // ws.onmessage = function(e) {
+		// console.log('Received: ' + e.data);
+		// data = e
+		// var vid = JSON.parse(data.data); 
+		// console.log(typeof(vid),vid)
+		// //document.getElementsByTagName("video")[0].setAttribute("src", vid["video"]);
+		
+	  // };
+	  // ws.onclose = function(e) {
+		// console.log('Closed');
+	  // };
+
+	  // $('#echo-form').on('submit', function(e) {
+    //   e.preventDefault();
+    //   chat();
+	  // });
+
+
+    
+
+    // btnStart_asr.on('click', function(){
+    //   input_mode = 1;
+    //   start();
+    //   record();
+    //   change_recording_state("on");
+    // });
+
+    // btnStop_asr.on('click', function(){
+    //   change_recording_state("off");
+
+    //   // var varArea = document.getElementById('varArea');
+    //   // var messageArea = document.getElementById('message');
+	  //   // message.value = varArea.value;
+      
+    //   // render_client(varArea.value);
+      
+    //   stop();
+      
+    //   $('#message').val('');
+
+    // });
+
+    sendtext.on('click', function(){
+      input_mode.value = 2;
+
+      send_new_chat();
+
+      // waitSpeakingEnd();
+    
+    });
+
+
+    rtc_media_player.on('resize', function(){
+      layout_pos();
+    });
+
+    $(window).on('resize', function(){
+      layout_pos();
+    });
+
+
+	});
+
+  function change_recording_state(state){
+    if (state=="on") {
+      btn_wait.hide();
+      if (input_mode.value == 1) {
+        btnStart_asr.hide();
+        btn_submit.prop('disabled', true);
+        btnStop_asr.show();
+        recordinggif.show();
+      }
+      
+    }else if (state=="wait") {
+      btn_wait.show();
+      btnStart_asr.hide();
+      btnStop_asr.hide();
+      recordinggif.hide();
+    }else if (state=="off") {
+      btnStart_asr.show();
+      btn_submit.prop('disabled', false);
+      btnStop_asr.hide();
+      recordinggif.hide();
+      btn_wait.hide();
+    }
+  }
+
+  function layout_pos(){
+    rtc_height = rtc_media_player.height();
+    console.log(rtc_height);
+    chat_container.css({ top: (rtc_height * 2 / 3 ) + 'px' });
+
+
+  }
+
+  $(function(){
+    var sdk = null; // Global handler to do cleanup when republishing.
+    var startPlay = function() {
+        $('#rtc_media_player').show();
+
+        // Close PC when user replay.
+        if (sdk) {
+            sdk.close();
+        }
+        sdk = new SrsRtcWhipWhepAsync();
+
+        // User should set the stream when publish is done, @see https://webrtc.org/getting-started/media-devices
+        // However SRS SDK provides a consist API like https://webrtc.org/getting-started/remote-streams
+        $('#rtc_media_player').prop('srcObject', sdk.stream);
+        // Optional callback, SDK will add track to stream.
+        // sdk.ontrack = function (event) { console.log('Got track', event); sdk.stream.addTrack(event.track); };
+
+        var host = window.location.hostname
+        // For example: webrtc://r.ossrs.net/live/livestream
+        var url = "http://"+host+":1985/rtc/v1/whep/?app=live&stream=livestream"
+        sdk.play(url).then(function(session){
+            //$('#sessionid').html(session.sessionid);
+            //$('#simulator-drop').attr('href', session.simulator + '?drop=1&username=' + session.sessionid);
+            
+        }).catch(function (reason) {
+            sdk.close();
+            $('#rtc_media_player').hide();
+            console.error(reason);
+        });
+    };
+
+    $('#rtc_media_player').hide();
+    // var query = parse_query_string();
+    // srs_init_whep("#txt_url", query);
+    
+    $('#rtc_media_player').prop('muted', true);
+    window.addEventListener("load", function(){ startPlay(); });
+
+    // $("#btn_play").click(startPlay);
+    // Never play util windows loaded @see https://github.com/ossrs/srs/issues/2732
+    // if (query.autostart === 'true') {
+    //     $('#rtc_media_player').prop('muted', true);
+    //     console.warn('For autostart, we should mute it, see https://www.jianshu.com/p/c3c6944eed5a ' +
+    //         'or https://developers.google.com/web/updates/2017/09/autoplay-policy-changes#audiovideo_elements');
+    //     window.addEventListener("load", function(){ startPlay(); });
+    // }
+});
+
+</script>
+
+
+<script type="text/javascript">
+
+  var pairs = [
+    {
+      status: 1,
+      userId: '1',
+      img: './static/logo2.png',
+      content: '你好, 我是德宝艺苑小助手，请问有什么可以帮助的？'
+    },
+    {
+      status: 2,
+      userId: '2',
+      img: './static/customer.png',
+    }
+  ]
+  var msg_max_items = 20;
+  let data = [
+      {
+          status: 1,
+          userId: '1',
+          img: './static/logo2.png',
+          time: '2021-2-26 15:00',
+          content: '你好, 我是德宝艺苑小助手，请问有什么可以帮助的？'
+      }
+  ]
+  
+  // 初始化页面
+  function init(data) {
+      let chat_html = ''
+      for (let i = 0; i < data.length; i++) {
+          if (data[i].status == 1) {
+              chat_html = `
+                  <div class="chat-lst-1 chat-lst">
+                      <div class="img">
+                          <img src="` + data[i].img + `" alt="">
+                      </div>
+                      <div class="chat-content-1">` + data[i].content +`</div>
+                  </div>
+              `
+          }else{
+              chat_html = `
+                  <div class="chat-lst-2 chat-lst">
+                      <div class="chat-content-2">` + data[i].content +`</div>
+                      <div class="img">
+                          <img src="` + data[i].img + `" alt="">
+                      </div>
+                  </div>
+              `
+          }
+          $('.top-box').append(chat_html)
+      }
+      $('.top-box').scrollTop($('.top-box').height())
+  }
+  
+  // 发送信息
+  function send() {
+      // console.log()
+      data.push({
+          status: 2,
+          userId: '2',
+          img: './static/customer.png',
+          time: 'XXXX-XX-XX XX:xx',
+          content: $('#send_content').val()
+      })
+      render_page({
+          status: 2,
+          userId: '2',
+          img: './static/customer.png',
+          time: 'XXXX-XX-XX XX:xx',
+          content: $('#send_content').val()
+      })
+      $('#send_content').val('')
+
+      if($("#ai-chat-box div.chat-lst").length > msg_max_items){
+          $("#ai-chat-box div.chat-lst:first-child").remove();
+          $("#ai-chat-box div.chat-lst:first-child").remove();
+      }
+  }
+
+  function render_client(msg) {
+    let dataimg = pairs[1].img;
+    let chat_html = `
+              <div class="chat-lst-2 chat-lst">
+                  <div class="chat-content-2">` + msg +`</div>
+                  <div class="img">
+                      <img src="` + dataimg + `" alt="">
+                  </div>
+              </div>
+          `
+      $('.top-box').append(chat_html)
+      $('.top-box').scrollTop($('.top-box')[0].scrollHeight + $('.top-box')[0].scrollTop)
+      if($("#ai-chat-box div.chat-lst").length > msg_max_items){
+          $("#ai-chat-box div.chat-lst:first-child").remove();
+          $("#ai-chat-box div.chat-lst:first-child").remove();
+      }
+  }
+
+  // 模拟接受信息
+  function render_bot(msg) {
+    let dataimg = pairs[0].img;
+      let chat_html = `
+          <div class="chat-lst-1 chat-lst">
+              <div class="img">
+                  <img src="` + dataimg + `" alt="">
+              </div>
+              <div class="chat-content-1">` + msg +`</div>
+          </div>
+      `
+      $('.top-box').append(chat_html)
+      $('.top-box').scrollTop($('.top-box')[0].scrollHeight + $('.top-box')[0].scrollTop)
+  }
+  
+
+  // // 发送后再次渲染页面
+  // function render_page(data) {
+  //     let chat_html = `
+  //             <div class="chat-lst-2 chat-lst">
+  //                 <div class="chat-content-2">` + data.content +`</div>
+  //                 <div class="img">
+  //                     <img src="` + data.img + `" alt="">
+  //                 </div>
+  //             </div>
+  //         `
+  //     $('.top-box').append(chat_html)
+  //     $('.top-box').scrollTop($('.top-box')[0].scrollHeight + $('.top-box')[0].scrollTop)
+      
+  //     setTimeout(() => {
+  //         get()
+  //     }, 1000);
+  // }
+  
+  // 模拟接受信息
+  function get() {
+      let text = ['抱歉,我不大清楚你的问题!' , '你可以再详细描述你的问题吗?']
+      let data = {
+          status: 1,
+          userId: '1',
+          img: './static/logo2.png',
+          time: 'XXXX-XX-XX XX:xx',
+          content: text[Math.floor(Math.random() * 2)]
+      }
+      let chat_html = `
+          <div class="chat-lst-1 chat-lst">
+              <div class="img">
+                  <img src="` + data.img + `" alt="">
+              </div>
+              <div class="chat-content-1">` + data.content +`</div>
+          </div>
+      `
+      $('.top-box').append(chat_html)
+      $('.top-box').scrollTop($('.top-box')[0].scrollHeight + $('.top-box')[0].scrollTop)
+  }
+  
+  init(data)
+  
+</script>
+
+
+<script src="testasr/recorder.js" charset="utf-8"></script>
+<script src="testasr/ws2.js" charset="utf-8"></script>
+
+<!-- <script src="asr/wsconnecter.js" charset="utf-8"></script>
+<script src="asr/main.js" charset="utf-8"></script> -->
+
+<script src="srs.sdk.js"></script>
+<!-- <script type="text/javascript" src="http://cdn.sockjs.org/sockjs-0.3.4.js"></script> -->
+<script src="https://lf9-cdn-tos.bytecdntp.com/cdn/expire-1-y/sockjs-client/1.6.0/sockjs.js"></script>
+
+
+</body>
+</html>

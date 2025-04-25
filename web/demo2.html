@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebRTC webcam</title>
+    <style>
+    button {
+        padding: 8px 16px;
+    }
+
+    video {
+        width: 100%;
+    }
+
+    .option {
+        margin-bottom: 8px;
+    }
+
+    #media {
+        max-width: 1280px;
+    }
+    </style>
+</head>
+<body>
+
+<div class="option" style="display: none;">
+    <input id="use-stun" type="checkbox"/>
+    <label for="use-stun">Use STUN server</label>
+</div>
+<button class="btn btn-primary" id="btn_play" style="display: none;">Start</button>
+<form class="form-inline" id="echo-form">
+    <div class="form-group">
+      <p>input text</p>
+      <p>提示：输入后点击“发送”，然后等待数字人响应~</p>
+      <textarea cols="2" rows="3" style="width:600px;height:50px;" class="form-control" id="message">金庸小说里人脉最多的人物是谁？都有哪些朋友？</textarea>
+    </div>
+    <button type="submit" class="btn btn-default">发送</button>
+  </form>
+
+<div id="media">
+    <h2>Media</h2>
+
+    <video id="rtc_media_player" style="width:300px;" controls autoplay></video>
+    <canvas id="canvas_player"></canvas>
+
+</div>
+
+<script src="srs.sdk.js"></script>
+<!-- <script type="text/javascript" src="http://cdn.sockjs.org/sockjs-0.3.4.js"></script> -->
+<script src="https://lf9-cdn-tos.bytecdntp.com/cdn/expire-1-y/sockjs-client/1.6.0/sockjs.js"></script>
+<script type="text/javascript" src="https://ajax.aspnetcdn.com/ajax/jquery/jquery-2.1.1.min.js"></script>
+</body>
+
+<script type="text/javascript" charset="utf-8">
+  const video = document.getElementById('rtc_media_player'); // 获取 video 元素
+  const canvas = document.getElementById('canvas_player'); // 获取 canvas 元素
+  const ctx = canvas.getContext('2d');
+
+  // 设置 canvas 的尺寸与 video 相同
+  // canvas.width = video.videoWidth;
+  // canvas.height = video.videoHeight;
+  canvas.width = 300;
+  canvas.height = 533;
+
+  var myImg = new Image();
+  myImg.onload = () => {
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(myImg, 0, 0);
+  };
+  myImg.src="https://img-s-msn-com.akamaized.net/tenant/amp/entityid/BB1msKSl.img"
+
+  function processVideoFrame() {
+    
+    // 将当前 video 帧绘制到 canvas 上
+    ctx.drawImage(video, 10, 10, canvas.width, canvas.height);
+    
+    // // 获取 canvas 的像素数据
+    // const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    // const data = imageData.data;
+
+    // // 过滤掉指定的颜色 (例如，红色)
+    // for (let i = 0; i < data.length; i += 4) {
+    //   const red = data[i];
+    //   const green = data[i + 1];
+    //   const blue = data[i + 2];
+
+    //   // // 如果是红色，则将其设置为透明
+    //   // if (red > 200 && green < 50 && blue < 50) {
+    //   //   data[i + 3] = 0; // 设置 alpha 值为 0，使其透明
+    //   // }
+    // }
+    // // 将修改后的像素数据写回 canvas
+    // ctx.putImageData(imageData, 0, 0);
+    // 循环调用 processVideoFrame() 以处理每一帧
+    requestAnimationFrame(processVideoFrame);
+  }
+
+  const fps = 25;
+  // // 开始处理视频帧
+  // video.addEventListener('play', function() {
+  //   setInterval(processVideoFrame, 1000/fps)
+  // });
+
+</script>
+<script type="text/javascript" charset="utf-8">
+
+	$(document).ready(function() {
+	  // var host = window.location.hostname
+	  // var ws = new WebSocket("ws://"+host+":8000/humanecho");
+	  // //document.getElementsByTagName("video")[0].setAttribute("src", aa["video"]);
+	  // ws.onopen = function() {
+		// console.log('Connected');
+	  // };
+	  // ws.onmessage = function(e) {
+		// console.log('Received: ' + e.data);
+		// data = e
+		// var vid = JSON.parse(data.data); 
+		// console.log(typeof(vid),vid)
+		// //document.getElementsByTagName("video")[0].setAttribute("src", vid["video"]);
+		
+	  // };
+	  // ws.onclose = function(e) {
+		// console.log('Closed');
+	  // };
+
+	  $('#echo-form').on('submit', function(e) {
+      e.preventDefault();
+      var message = $('#message').val();
+      console.log('Sending: ' + message);
+      fetch('/human', {
+            body: JSON.stringify({
+                text: message,
+                type: 'chat',
+            }),
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            method: 'POST'
+      });
+      //ws.send(message);
+      $('#message').val('');
+      $('#rtc_media_player').prop('muted', false);
+	  });
+	});
+
+  $(function(){
+    var sdk = null; // Global handler to do cleanup when republishing.
+    var startPlay = function() {
+        $('#rtc_media_player').show();
+
+        // Close PC when user replay.
+        if (sdk) {
+            sdk.close();
+        }
+        sdk = new SrsRtcWhipWhepAsync();
+
+        // User should set the stream when publish is done, @see https://webrtc.org/getting-started/media-devices
+        // However SRS SDK provides a consist API like https://webrtc.org/getting-started/remote-streams
+        $('#rtc_media_player').prop('srcObject', sdk.stream);
+        // Optional callback, SDK will add track to stream.
+        // sdk.ontrack = function (event) { console.log('Got track', event); sdk.stream.addTrack(event.track); };
+
+        var host = window.location.hostname
+        // For example: webrtc://r.ossrs.net/live/livestream
+        var url = "http://"+host+":1985/rtc/v1/whep/?app=live&stream=livestream"
+        sdk.play(url).then(function(session){
+            //$('#sessionid').html(session.sessionid);
+            //$('#simulator-drop').attr('href', session.simulator + '?drop=1&username=' + session.sessionid);
+        }).catch(function (reason) {
+            sdk.close();
+            $('#rtc_media_player').hide();
+            console.error(reason);
+        });
+
+
+        setInterval(processVideoFrame, 10);
+    };
+
+    $('#rtc_media_player').hide();
+    // var query = parse_query_string();
+    // srs_init_whep("#txt_url", query);
+    
+    $('#rtc_media_player').prop('muted', true);
+    window.addEventListener("load", function(){ startPlay(); });
+
+    // $("#btn_play").click(startPlay);
+    // Never play util windows loaded @see https://github.com/ossrs/srs/issues/2732
+    // if (query.autostart === 'true') {
+    //     $('#rtc_media_player').prop('muted', true);
+    //     console.warn('For autostart, we should mute it, see https://www.jianshu.com/p/c3c6944eed5a ' +
+    //         'or https://developers.google.com/web/updates/2017/09/autoplay-policy-changes#audiovideo_elements');
+    //     window.addEventListener("load", function(){ startPlay(); });
+    // }
+});
+</script>
+</html>
